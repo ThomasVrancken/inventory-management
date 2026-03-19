@@ -8,6 +8,40 @@
     <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else>
+
+      <!-- Submitted Restocking Orders -->
+      <div v-if="restockingOrders.length > 0" class="card restocking-orders-card">
+        <div class="card-header">
+          <h3 class="card-title">Submitted Restocking Orders ({{ restockingOrders.length }})</h3>
+        </div>
+        <div class="table-container">
+          <table class="restocking-table">
+            <thead>
+              <tr>
+                <th class="col-rorder-number">Order Number</th>
+                <th class="col-rsubmitted">Submitted</th>
+                <th class="col-ritems">Items</th>
+                <th class="col-rstatus">Status</th>
+                <th class="col-rtotal">Total Cost</th>
+                <th class="col-rdelivery">Est. Delivery</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="rOrder in restockingOrders" :key="rOrder.id">
+                <td class="col-rorder-number"><strong>{{ rOrder.order_number }}</strong></td>
+                <td class="col-rsubmitted">{{ formatDate(rOrder.submitted_at) }}</td>
+                <td class="col-ritems">{{ rOrder.items.length }} item{{ rOrder.items.length !== 1 ? 's' : '' }}</td>
+                <td class="col-rstatus">
+                  <span class="badge info">{{ rOrder.status }}</span>
+                </td>
+                <td class="col-rtotal"><strong>{{ currencySymbol }}{{ rOrder.total_cost.toLocaleString() }}</strong></td>
+                <td class="col-rdelivery">{{ getMaxLeadTime(rOrder.items) }} days</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card success">
           <div class="stat-label">{{ t('status.delivered') }}</div>
@@ -95,6 +129,7 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const restockingOrders = ref([])
 
     // Use shared filters
     const {
@@ -129,6 +164,19 @@ export default {
       loadOrders()
     })
 
+    const loadRestockingOrders = async () => {
+      try {
+        restockingOrders.value = await api.getRestockingOrders()
+      } catch (err) {
+        console.error('Failed to load restocking orders:', err)
+      }
+    }
+
+    const getMaxLeadTime = (items) => {
+      if (!items || items.length === 0) return 0
+      return Math.max(...items.map(item => item.lead_time_days || 0))
+    }
+
     const getOrdersByStatus = (status) => {
       return orders.value.filter(order => order.status === status)
     }
@@ -153,19 +201,24 @@ export default {
       })
     }
 
-    onMounted(loadOrders)
+    onMounted(() => {
+      loadOrders()
+      loadRestockingOrders()
+    })
 
     return {
       t,
       loading,
       error,
       orders,
+      restockingOrders,
       getOrdersByStatus,
       getOrderStatusClass,
       formatDate,
       currencySymbol,
       translateProductName,
-      translateCustomerName
+      translateCustomerName,
+      getMaxLeadTime
     }
   }
 }
@@ -276,4 +329,21 @@ export default {
   font-size: 0.813rem;
   color: #64748b;
 }
+
+/* Restocking orders table */
+.restocking-orders-card {
+  border-left: 3px solid #2563eb;
+}
+
+.restocking-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.col-rorder-number { width: 160px; }
+.col-rsubmitted { width: 150px; }
+.col-ritems { width: 110px; }
+.col-rstatus { width: 120px; }
+.col-rtotal { width: 140px; }
+.col-rdelivery { width: 140px; }
 </style>
