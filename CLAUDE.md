@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Factory Inventory Management System Demo with GitHub integration - Full-stack application with Vue 3 frontend, Python FastAPI backend, and in-memory mock data (no database).
 
 ## Critical Tool Usage Rules
@@ -31,14 +33,33 @@ Use the Task tool with these specialized subagents for appropriate tasks:
 ## Quick Start
 
 ```bash
-# Backend
-cd server
-uv run python main.py
+# Both servers at once
+./scripts/start.sh
 
-# Frontend
-cd client
-npm install && npm run dev
+# Backend only
+cd server && uv run python main.py   # http://localhost:8001, docs at /docs
+
+# Frontend only
+cd client && npm install && npm run dev  # http://localhost:3000
 ```
+
+## Tests
+
+```bash
+# Run all backend tests
+cd tests && uv run pytest -v
+
+# Run a single test file
+cd tests && uv run pytest backend/test_inventory.py -v
+
+# Run a single test
+cd tests && uv run pytest backend/test_inventory.py::TestInventoryEndpoints::test_get_all_inventory -v
+
+# With coverage
+cd tests && uv run pytest --cov=../server --cov-report=html
+```
+
+Tests use FastAPI's `TestClient` (no live server needed). Config in `tests/pytest.ini`.
 
 ## Key Patterns
 
@@ -52,6 +73,7 @@ npm install && npm run dev
 - `GET /api/dashboard/summary` - All filters
 - `GET /api/demand`, `/api/backlog` - No filters
 - `GET /api/spending/*` - Summary, monthly, categories, transactions
+- `GET /api/reports/quarterly`, `/api/reports/monthly-trends` - No filters
 
 ## Common Issues
 1. Use unique keys in v-for (not `index`) - use `sku`, `month`, etc.
@@ -72,3 +94,8 @@ npm install && npm run dev
 - Status: green/blue/yellow/red
 - Charts: Custom SVG, CSS Grid for layouts
 - No emojis in UI
+- i18n: English and Japanese supported via `client/src/composables/useI18n.js` and `client/src/locales/`
+
+## Sub-CLAUDE.md Files
+- `client/CLAUDE.md` - Vue 3 patterns, reactivity, component structure
+- `server/CLAUDE.md` - FastAPI patterns, filtering, Pydantic models
